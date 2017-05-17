@@ -1,4 +1,4 @@
-function output = ext_flu_feat(infile,outfile)
+function output = adv_ext_flu_feat(infile,transfile,lmsfile,amsfile,outfile)
 
 % Extract fluency features
 % input 
@@ -30,6 +30,13 @@ end
 % Read file
 para = read_file(infile);
 
+% Read trans file
+para = read_trans_file(transfile,para);
+
+% Read score file
+para = read_score_file(lmsfile,para,'lm');
+para = read_score_file(amsfile,para,'am');
+
 % Extract the additive information
 para = ext_add_info(para);
 
@@ -44,8 +51,8 @@ output = para;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Read file
     function output = read_file(filename)
-    para = [];
     pid = 0;
+    para = [];
     preinfo = '';
 
 
@@ -109,6 +116,93 @@ output = para;
 
     end
 
+%% Read transcription file
+    function output = read_trans_file(filename,para)
+    
+    [fid, message]= fopen(filename); % file open
+    if(fid == -1)
+        disp(message);
+        disp(filename);
+    end
+
+    str = fgets(fid);
+    while str ~= -1
+        trans = [];
+        tid = 0;
+        segStr = regexp(str, '\s', 'split');
+        finfo = segStr{1};
+    
+        % save para name : 1st column
+        if isempty(para),
+            error('do not exist speaker information'); 
+        end
+        
+        for i=1:length(para)
+            if strcmp(para(i).name,finfo),
+                tid = i;
+            end
+        end
+        
+        nw = 1;
+        for j=2:size(segStr,2)
+            word = deblank(segStr{j});
+            if ~isempty(word),
+                trans{nw} = word;
+                nw = nw + 1;
+            end
+        end
+        para(tid).trans = trans;
+    
+        str = fgets(fid);
+    end
+    st = fclose(fid);
+    
+    output = para;
+
+    end
+
+%% Read LM, AM score file
+    function output = read_score_file(filename,para,opt)
+    
+    [fid, message]= fopen(filename); % file open
+    if(fid == -1)
+        disp(message);
+        disp(filename);
+    end
+
+    str = fgets(fid);
+    while str ~= -1
+        sid = 0;
+        segStr = regexp(str, '\s', 'split');
+        finfo = segStr{1};
+        score = str2double(deblank(segStr{2}));
+    
+        % save para name : 1st column
+        if isempty(para),
+            error('do not exist speaker information'); 
+        end
+        
+        for i=1:length(para)
+            if strcmp(para(i).name,finfo),
+                sid = i;
+            end
+        end        
+ 
+        switch opt 
+            case 'lm' 
+                para(sid).lmscore = score;
+            case 'am'
+                para(sid).amscore = score;
+        end
+    
+        str = fgets(fid);
+    end
+    st = fclose(fid);
+    
+    output = para;
+
+    end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Extract the additive information
     function output = ext_add_info(input)
@@ -144,7 +238,9 @@ output = para;
         dur = inputD(k).durary;
         sum_dur = sum(dur);
         sil_dur = dur(phnid==2);
-        longsil_dur = sil_dur(sil_dur > 0.5);
+        numwds = length(inputD(k).trans);
+        ams = inputD(k).amscore;
+        lms = inputD(k).lmscore;
 
         % 1. Speech rate
         SR = nnz(phnid==1)/sum_dur;
@@ -181,29 +277,49 @@ output = para;
         SLUP = sum(sigm(sil_dur,[0.5 1.5]));
         featList = char(featList,'SLUP');
         feat = [feat SLUP];
+    
+        % add features 2017.05.16
+        % 8. Smoothed number of unfilled pause
+        snumUP = sum(sigm(sil_dur));
+        featList = char(featList,'snumUP');
+        feat = [feat snumUP];
 
-	% add features 2017.05.16
-	% 8. Smoothed number of unfilled pause
-	snumUP = sum(sigm(sil_dur));
-	featList = char(featList,'snumUP');
-	feat = [feat snumUP];
+        % 9. Mean deviation of unfilled pause
+        silmeandev = mad(sil_dur,0);
+        featList = char(featList,'silmeandev');
+        feat = [feat silmeandev];
 
-	% 9. Mean deviation of unfilled pause
-	silmeandev = mad(sil_dur,0);
-	featList = char(featList,'silmeandev');
-	feat = [feat silmeandev];
-
-	% 10. Median deviation of unfilled pause
-	silmeddev = mad(sil_dur,1);
-	featList = char(featList,'silmeddev');
-	feat = [feat silmeddev];
+        % 10. Median deviation of unfilled pause
+        silmeddev = mad(sil_dur,1);
+        featList = char(featList,'silmeddev');
+        feat = [feat silmeddev];
 	
-	% 11. Standard deviation of unfilled pause
-	silstddev = std(sil_dur,1);
-	featList = char(featList,'silstddev');
-	feat = [feat silstddev];
-
-
+        % 11. Standard deviation of unfilled pause
+        silstddev = std(sil_dur,1);
+        featList = char(featList,'silstddev');
+        feat = [feat silstddev];
+        
+        % 12. Duration of silences per word :
+        %   total duration of silences divided by # of words
+        silpwd = sum(sil_dur)/numwds;
+        featList = char(featList,'silpwd');
+        feat = [feat silpwd];
+        
+        % 13. Smoothed number of long unfilled pause 
+        %       divided by number of words
+        longpwd = SLUP/numwds;
+        featList = char(featList,'longpwd');
+        feat = [feat longpwd];
+        
+        % 14. AM score (normalized)
+        amscore = ams /( sum_dur/0.01);
+        featList = char(featList,'amscore');
+        feat = [feat amscore];
+        
+        % 15. LM score (normalized)
+        lmscore = lms / numwds;
+        featList = char(featList,'lmscore');
+        feat = [feat lmscore];
 
         inputD(k).featList = featList;
         inputD(k).feat = feat;

@@ -190,7 +190,7 @@ output = para;
 
 	% 9. Mean deviation of unfilled pause
 	silmeandev = mad(sil_dur,0);
-	featList = char(featList,'silmeandev');
+	featList = char(featList,'silmeandev');2dlm
 	feat = [feat silmeandev];
 
 	% 10. Median deviation of unfilled pause

@@ -1,7 +1,11 @@
 clear all; close all;
 clc
 
-infile='sample_data/sample_ctm_39phn.filt';
-outfile='sample_data/sample.feat';
+addpath('func');
+infile='../exp_data/librispeech_tri6b_est_set1.filt';
+transfile='../exp_data/librispeech_tri6b_est_set1.trans';
+amsfile='../exp_data/librispeech_tri6b_est_set1.amscore';
+lmsfile='../exp_data/librispeech_tri6b_est_set1.lmscore';
+outfile='../exp_data/tmp_librispeech_tri6b_est_set1.feat';
 
-para = ext_flu_feat(infile,outfile);
+para = adv_ext_flu_feat(infile,transfile,lmsfile,amsfile,outfile);
