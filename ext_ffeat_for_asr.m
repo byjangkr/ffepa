@@ -372,8 +372,11 @@ output = para;
 	feat = [feat check_add_feat(featname,nnz(wordid==0),sum_dur,name)];
         featList = char(featList,featname);
 
+        % modified
         inputD(k).featList = featList;
-        inputD(k).feat = feat;
+        %inputD(k).feat = feat;
+        %inputD(k).feat = [feat(:,1:3) feat(:,6)-feat(:,5)-feat(:,4)];
+        inputD(k).feat = feat(:,1:3);
     
     end
     
