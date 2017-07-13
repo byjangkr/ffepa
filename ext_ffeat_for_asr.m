@@ -1,4 +1,4 @@
-function output = ext_ffeat_for_asr(infile,transfile,outfile)
+function output = ext_ffeat_for_asr(infile,transfile,lmsfile,amsfile,outfile)
 
 % Extract fluency features
 % input 
@@ -7,6 +7,7 @@ function output = ext_ffeat_for_asr(infile,transfile,outfile)
 %
 
 addpath('ffepa/func');
+
 % need function
 % func/sigm.m
 % func/mydbinfo.m
@@ -36,8 +37,8 @@ para = read_file(infile);
 para = read_trans_file(transfile,para);
 
 % Read score file
-%para = read_score_file(lmsfile,para,'lm');
-%para = read_score_file(amsfile,para,'am');
+para = read_score_file(lmsfile,para,'lm');
+para = read_score_file(amsfile,para,'am');
 
 % Extract the additive information
 para = ext_add_info(para);
@@ -166,46 +167,46 @@ output = para;
     end
 
 %% Read LM, AM score file
-%    function output = read_score_file(filename,para,opt)
-%    
-%    [fid, message]= fopen(filename); % file open
-%    if(fid == -1)
-%        disp(message);
-%        disp(filename);
-%    end
-%
-%    str = fgets(fid);
-%    while str ~= -1
-%        sid = 0;
-%        segStr = regexp(str, '\s', 'split');
-%        finfo = segStr{1};
-%        score = str2double(deblank(segStr{2}));
-%    
-%        % save para name : 1st column
-%        if isempty(para),
-%            error('do not exist speaker information'); 
-%        end
-%        
-%        for i=1:length(para)
-%            if strcmp(para(i).name,finfo),
-%                sid = i;
-%            end
-%        end        
-% 
-%        switch opt 
-%            case 'lm' 
-%                para(sid).lmscore = score;
-%            case 'am'
-%                para(sid).amscore = score;
-%        end
-%    
-%        str = fgets(fid);
-%    end
-%    st = fclose(fid);
-%    
-%    output = para;
-%
-%    end
+   function output = read_score_file(filename,para,opt)
+   
+   [fid, message]= fopen(filename); % file open
+   if(fid == -1)
+       disp(message);
+       disp(filename);
+   end
+
+   str = fgets(fid);
+   while str ~= -1
+       sid = 0;
+       segStr = regexp(str, '\s', 'split');
+       finfo = segStr{1};
+       score = str2double(deblank(segStr{2}));
+   
+       % save para name : 1st column
+       if isempty(para),
+           error('do not exist speaker information'); 
+       end
+       
+       for i=1:length(para)
+           if strcmp(para(i).name,finfo),
+               sid = i;
+           end
+       end        
+
+       switch opt 
+           case 'lm' 
+               para(sid).lmscore = score;
+           case 'am'
+               para(sid).amscore = score;
+       end
+   
+       str = fgets(fid);
+   end
+   st = fclose(fid);
+   
+   output = para;
+
+   end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -264,48 +265,47 @@ output = para;
     sizePara = size(inputD,2);
     for k=1:sizePara
         phnid = inputD(k).phnid;
-	wordid = inputD(k).wordid;
+        wordid = inputD(k).wordid;
         dur = inputD(k).durary;
         sum_dur = sum(dur);
         sil_dur = dur(phnid==2);
         numwds = length(inputD(k).trans);
-% fe_03_00001-B-014528-014626
-% fe_03_00046-B-059195-059382
-	name = inputD(k).name;
+
+        name = inputD(k).name;
         if numwds == 0,
             fprintf('not exist trans file - %s \n',inputD(k).name);
             numwds = 0.01;
         end
 
-        %ams = inputD(k).amscore;
-        %lms = inputD(k).lmscore;
+        ams = inputD(k).amscore;
+        lms = inputD(k).lmscore;
 
         % 1. Speech rate
         featname = 'SR';
- 	feat = check_add_feat(featname,nnz(phnid==1),sum_dur,name);
+        feat = check_add_feat(featname,nnz(phnid==1),sum_dur,name);
         featList = char(featname);
         
 
         % 2. Articulation rate
         featname = 'AR';
- 	feat = [feat check_add_feat(featname,nnz(phnid==1),sum(dur(phnid~=2)),name)];
+        feat = [feat check_add_feat(featname,nnz(phnid==1),sum(dur(phnid~=2)),name)];
         featList = char(featList,featname);
 
 
         % 3. Phonation time ratio
         featname = 'PR';
- 	feat = [feat check_add_feat(featname,sum(dur(phnid==1)),sum_dur,name)];
+        feat = [feat check_add_feat(featname,sum(dur(phnid==1)),sum_dur,name)];
         featList = char(featList,featname);
 
         % 4. Mean length of runs
-%        featname = 'LR';
-%        subdur = dur(2:end-1);
-%  	feat = [feat check_add_feat(featname,nnz(phnid==1),(nnz(subdur(phnid(2:end-1)==2) > cutoff)+1),name)];
-%        featList = char(featList,featname);
+        featname = 'LR';
+        subdur = dur(2:end-1);
+      	feat = [feat check_add_feat(featname,nnz(phnid==1),(nnz(subdur(phnid(2:end-1)==2) > cutoff)+1),name)];
+        featList = char(featList,featname);
 
         % 5. Smoothed ufilled pause rate
         featname = 'SUPR';
- 	feat = [feat check_add_feat(featname,sum(sigm(sil_dur)),sum_dur,name)];
+        feat = [feat check_add_feat(featname,sum(sigm(sil_dur)),sum_dur,name)];
         featList = char(featList,featname);
 
         % 6. Mean length of unfilled pauses
@@ -352,31 +352,37 @@ output = para;
 %        featList = char(featList,featname);
         
         % 14. AM score (normalized)
+        featname = 'amscore';
+        feat = [feat check_add_feat(featname,ams,( sum_dur/0.01),name)];
         %amscore = ams /( sum_dur/0.01);
-        %featList = char(featList,'amscore');
-        %feat = [feat amscore];
+        featList = char(featList,featname);
         
         % 15. LM score (normalized)
+        featname = 'lmscore';
+        feat = [feat check_add_feat(featname,lms,numwds,name)];
+        featList = char(featList,featname);
         %lmscore = lms / numwds;
         %featList = char(featList,'lmscore');
         %feat = [feat lmscore];
 
 	% add features for asr 2017.07.04
 	% 16. Filled pause rate
-	featname = 'FPR';
-	feat = [feat check_add_feat(featname,nnz(wordid==1),sum_dur,name)];
-        featList = char(featList,featname);
+% 	featname = 'FPR';
+% 	feat = [feat check_add_feat(featname,nnz(wordid==1),sum_dur,name)];
+%         featList = char(featList,featname);
 
 	% 17. word rate
-	featname = 'WR';
-	feat = [feat check_add_feat(featname,nnz(wordid==0),sum_dur,name)];
-        featList = char(featList,featname);
+% 	featname = 'WR';
+% 	feat = [feat check_add_feat(featname,nnz(wordid==0),sum_dur,name)];
+%         featList = char(featList,featname);
 
         % modified
+	gmdl = load('train_10k_long_ffeat.mat');
         inputD(k).featList = featList;
         %inputD(k).feat = feat;
-        %inputD(k).feat = [feat(:,1:3) feat(:,6)-feat(:,5)-feat(:,4)];
-        inputD(k).feat = feat(:,1:3);
+        gmfeat = [pdf(gmdl.gmobj1,feat(1)) pdf(gmdl.gmobj2,feat(2)) pdf(gmdl.gmobj3,feat(3)) pdf(gmdl.gmobj4,feat(4)) pdf(gmdl.gmobj5,feat(5))];
+        gmfeat = [gmfeat pdf(gmdl.gmobj14,feat(6)) pdf(gmdl.gmobj15,feat(7))];
+        inputD(k).feat = gmfeat;
     
     end
     
