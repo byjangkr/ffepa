@@ -380,7 +380,7 @@ output = para;
 	gmdl = load('train_10k_long_ffeat.mat');
         inputD(k).featList = featList;
         %inputD(k).feat = feat;
-        gmfeat = [pdf(gmdl.gmobj1,feat(1)) pdf(gmdl.gmobj2,feat(2)) pdf(gmdl.gmobj3,feat(3)) pdf(gmdl.gmobj4,feat(4)) pdf(gmdl.gmobj5,feat(5))];
+        gmfeat = [pdf(gmdl.gmobj1,feat(1)) pdf(gmdl.gmobj2,feat(2)) pdf(gmdl.gmobj3,feat(3)) pdf(gmdl.gmobj5,feat(5))];
         gmfeat = [gmfeat pdf(gmdl.gmobj14,feat(6)) pdf(gmdl.gmobj15,feat(7))];
         inputD(k).feat = gmfeat;
     
