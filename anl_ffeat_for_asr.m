@@ -5,7 +5,7 @@ addpath('func');
 %filename = 'train_10k_long.ffeat';
 %filename = 'dev_long.lmscore';
 %filename = 'set1.ffeat';
-filename = 'sample_data/train_10k_long_all.ffeat';
+filename = 'sample_data/train_10k_long_all.fgmfeat9';
 [fid, message] = fopen(filename);
 if fid == -1,
     disp(message);
@@ -69,7 +69,7 @@ plot(gx,pdf(gmobj3,gx'),'r'); hold off;
 title('Phonation time ratio');
 
 subplot(5,1,4);
-[hprob, hx, gmobj4, gx] = hist2gmm(feats(:,4),hbin,3,gres);
+[hprob, hx, gmobj4, gx] = hist2gmm(feats(:,4),hbin,2,gres);
 bar(hx,hprob);  hold on;
 plot(gx,pdf(gmobj4,gx'),'r'); hold off;
 title('Mean length of runs (m=3)');
@@ -142,4 +142,17 @@ bar(hx,hprob);  hold on;
 plot(gx,pdf(gmobj15,gx'),'r'); hold off;
 title('LM score (normalized)');
 
-save('train_10k_long_ffeat.mat','gmobj1','gmobj2','gmobj3','gmobj4','gmobj5','gmobj14','gmobj15');
+figure(4);
+subplot(5,1,1);
+[hprob, hx, gmobj16, gx] = hist2gmm(feats(:,16),30,gmix,gres);
+bar(hx,hprob);  hold on;
+plot(gx,pdf(gmobj16,gx'),'r'); hold off;
+title('Filled/unfilled pause rate');
+
+subplot(5,1,2);
+[hprob, hx, gmobj17, gx] = hist2gmm(feats(:,17),hbin,gmix,gres);
+bar(hx,hprob);  hold on;
+plot(gx,pdf(gmobj17,gx'),'r'); hold off;
+title('word rate');
+
+%save('train_10k_long_ffeat.mat','gmobj1','gmobj2','gmobj3','gmobj4','gmobj5','gmobj14','gmobj15','gmobj16','gmobj17');

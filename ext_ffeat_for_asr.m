@@ -21,14 +21,16 @@ vowels = {'aa','ae','ah','aw','ay','eh','er','ey','ih','iy',...
               'ow','oy','uh','uw','oov'};
 consonants = {'b','ch','d','dh','dx','f','g','hh','jh','k',...
                  'l','m','n','ng','p','r','s','sh','t','th',...
-                 'v','w','y','z','laughter','noise'};
-silence = char('sil');
+                 'v','w','y','z'};
+% silence = char('sil');
+silence = {'sil','laughter','noise'};
 % word level
 fpword = {'uh','um','huh','mm','mhm','[laughter]','[noise]','<unk>'}; % filled pause
 
 if nargin < 2,
   error('error!!! need argument : infile, outfile');
 end
+
 
 % Read file
 para = read_file(infile);
@@ -214,8 +216,11 @@ output = para;
     function outfeat = check_add_feat(featname,NUM,DEN,name)
     val = NUM/DEN;
     if isnan(val),
-      error('Error!!! %s is NaN ( %0.2f / %0.2f )\n\t Target : %s \n',...
+      sprintf('Warning!!! %s is NaN ( %0.2f / %0.2f )\n\t Target : %s \n',...
 		featname,NUM,DEN,name);
+      %error('Error!!! %s is NaN ( %0.2f / %0.2f )\n\t Target : %s \n',...
+	%	featname,NUM,DEN,name);
+      val = 0.0001;
     end
     outfeat = val;
     end
@@ -234,7 +239,9 @@ output = para;
         for j=1:size(vowels,2)
             phnid = phnid + strcmpi(tmpcel,vowels{1,j});    
         end
-        phnid = phnid + 2*strcmpi(tmpcel,silence);
+        for j=1:size(silence,2)
+            phnid = phnid + 2*strcmpi(tmpcel,silence{1,j});
+        end
     
         inputD(i).phnid = phnid;
 
@@ -246,7 +253,9 @@ output = para;
         for j=1:size(fpword,2)
             wordid = wordid + strcmpi(tmpcel,fpword{1,j});    
         end
-        wordid = wordid + 2*strcmpi(tmpcel,silence);
+        for j=1:size(silence,2)
+            wordid = wordid + 2*strcmpi(tmpcel,silence{1,j});
+        end
     
         inputD(i).wordid = wordid;
 
@@ -299,8 +308,9 @@ output = para;
 
         % 4. Mean length of runs
         featname = 'LR';
-        subdur = dur(2:end-1);
-      	feat = [feat check_add_feat(featname,nnz(phnid==1),(nnz(subdur(phnid(2:end-1)==2) > cutoff)+1),name)];
+%        subdur = dur(2:end-1);
+%      	feat = [feat check_add_feat(featname,nnz(phnid==1),(nnz(subdur(phnid(2:end-1)==2) > cutoff)+1),name)];
+      	feat = [feat check_add_feat(featname,nnz(phnid==1),(nnz(dur(phnid==2) > cutoff)+1),name)];
         featList = char(featList,featname);
 
         % 5. Smoothed ufilled pause rate
@@ -309,47 +319,47 @@ output = para;
         featList = char(featList,featname);
 
         % 6. Mean length of unfilled pauses
-%	featname = 'lenUP';
-% 	feat = [feat check_add_feat(featname,mean(sil_dur),1,name)];
-%        featList = char(featList,featname);
+	featname = 'lenUP';
+ 	feat = [feat check_add_feat(featname,mean(sil_dur),1,name)];
+        featList = char(featList,featname);
     
         % 7. Smoothed number of long unfilled pause
-%	featname = 'SLUP';
-% 	feat = [feat check_add_feat(featname,sum(sigm(sil_dur,[0.5 1.5])),1,name)];
-%        featList = char(featList,featname);
+	featname = 'SLUP';
+ 	feat = [feat check_add_feat(featname,sum(sigm(sil_dur,[0.5 1.5])),1,name)];
+        featList = char(featList,featname);
     
         % add features 2017.05.16
         % 8. Smoothed number of unfilled pause
-%	featname = 'snumUP';
-% 	feat = [feat check_add_feat(featname,sum(sigm(sil_dur)),1,name)];
-%        featList = char(featList,featname);
+	featname = 'snumUP';
+ 	feat = [feat check_add_feat(featname,sum(sigm(sil_dur)),1,name)];
+        featList = char(featList,featname);
 
         % 9. Mean deviation of unfilled pause
-%	featname = 'silmeandev';
-% 	feat = [feat check_add_feat(featname,mad(sil_dur,0),1,name)];
-%        featList = char(featList,featname);
+	featname = 'silmeandev';
+ 	feat = [feat check_add_feat(featname,mad(sil_dur,0),1,name)];
+        featList = char(featList,featname);
 
         % 10. Median deviation of unfilled pause
-%	featname = 'silmeddev';
-% 	feat = [feat check_add_feat(featname,mad(sil_dur,1),1,name)];
-%        featList = char(featList,featname);
+	featname = 'silmeddev';
+ 	feat = [feat check_add_feat(featname,mad(sil_dur,1),1,name)];
+        featList = char(featList,featname);
 	
         % 11. Standard deviation of unfilled pause
-%	featname = 'silstddev';
-% 	feat = [feat check_add_feat(featname,std(sil_dur,1),1,name)];
-%        featList = char(featList,featname);
+	featname = 'silstddev';
+ 	feat = [feat check_add_feat(featname,std(sil_dur,1),1,name)];
+        featList = char(featList,featname);
 
         % 12. Duration of silences per word :
         %   total duration of silences divided by # of words
-%	featname = 'silpwd';
-% 	feat = [feat check_add_feat(featname,sum(sil_dur),numwds,name)];
-%        featList = char(featList,featname);
+	featname = 'silpwd';
+ 	feat = [feat check_add_feat(featname,sum(sil_dur),numwds,name)];
+        featList = char(featList,featname);
         
         % 13. Smoothed number of long unfilled pause 
         %       divided by number of words
-%	featname = 'longpwd';
-% 	feat = [feat check_add_feat(featname,sum(sigm(sil_dur,[0.5 1.5])),numwds,name)];
-%        featList = char(featList,featname);
+	featname = 'longpwd';
+ 	feat = [feat check_add_feat(featname,sum(sigm(sil_dur,[0.5 1.5])),numwds,name)];
+        featList = char(featList,featname);
         
         % 14. AM score (normalized)
         featname = 'amscore';
@@ -366,22 +376,23 @@ output = para;
         %feat = [feat lmscore];
 
 	% add features for asr 2017.07.04
-	% 16. Filled pause rate
-% 	featname = 'FPR';
-% 	feat = [feat check_add_feat(featname,nnz(wordid==1),sum_dur,name)];
-%         featList = char(featList,featname);
+	% 16. Filled/unfilled pause rate
+ 	featname = 'FUFPR';
+ 	feat = [feat check_add_feat(featname,nnz(wordid~=0),sum_dur,name)];
+         featList = char(featList,featname);
 
 	% 17. word rate
-% 	featname = 'WR';
-% 	feat = [feat check_add_feat(featname,nnz(wordid==0),sum_dur,name)];
-%         featList = char(featList,featname);
+ 	featname = 'WR';
+ 	feat = [feat check_add_feat(featname,nnz(wordid==0),sum_dur,name)];
+        featList = char(featList,featname);
 
         % modified
 	gmdl = load('train_10k_long_ffeat.mat');
         inputD(k).featList = featList;
         %inputD(k).feat = feat;
-        gmfeat = [pdf(gmdl.gmobj1,feat(1)) pdf(gmdl.gmobj2,feat(2)) pdf(gmdl.gmobj3,feat(3)) pdf(gmdl.gmobj5,feat(5))];
-        gmfeat = [gmfeat pdf(gmdl.gmobj14,feat(6)) pdf(gmdl.gmobj15,feat(7))];
+
+        gmfeat = [pdf(gmdl.gmobj1,feat(1)) pdf(gmdl.gmobj2,feat(2)) pdf(gmdl.gmobj3,feat(3)) pdf(gmdl.gmobj4,feat(4)) pdf(gmdl.gmobj5,feat(5))];
+        gmfeat = [gmfeat pdf(gmdl.gmobj14,feat(14)) pdf(gmdl.gmobj15,feat(15)) pdf(gmdl.gmobj16,feat(16)) pdf(gmdl.gmobj17,feat(17))];
         inputD(k).feat = gmfeat;
     
     end
