@@ -387,13 +387,20 @@ output = para;
         featList = char(featList,featname);
 
         % modified
-	gmdl = load('train_10k_long_ffeat.mat');
+	%gmdl = load('train_10k_long_ffeat.mat');
+        %cmvn = load('train_10k_long_cmvn.mat');
+        %mmat = repmat(cmvn.m,size(feat,1));
+        %smat = repmat(cmvn.s,size(feat,1));
+        %no_feat = (feat - mmat)./smat;
+    
         inputD(k).featList = featList;
-        %inputD(k).feat = feat;
+        %featsel = [ 1 2 3 4 5 14 15 16 17 ];
+        %inputD(k).feat = no_feat(:,featsel);
+        inputD(k).feat = feat(:,1:15);
 
-        gmfeat = [pdf(gmdl.gmobj1,feat(1)) pdf(gmdl.gmobj2,feat(2)) pdf(gmdl.gmobj3,feat(3)) pdf(gmdl.gmobj4,feat(4)) pdf(gmdl.gmobj5,feat(5))];
-        gmfeat = [gmfeat pdf(gmdl.gmobj14,feat(14)) pdf(gmdl.gmobj15,feat(15)) pdf(gmdl.gmobj16,feat(16)) pdf(gmdl.gmobj17,feat(17))];
-        inputD(k).feat = gmfeat;
+        %gmfeat = [pdf(gmdl.gmobj1,feat(1)) pdf(gmdl.gmobj2,feat(2)) pdf(gmdl.gmobj3,feat(3)) pdf(gmdl.gmobj4,feat(4)) pdf(gmdl.gmobj5,feat(5))];
+        %gmfeat = [gmfeat pdf(gmdl.gmobj14,feat(14)) pdf(gmdl.gmobj15,feat(15)) pdf(gmdl.gmobj16,feat(16)) pdf(gmdl.gmobj17,feat(17))];
+        %inputD(k).feat = gmfeat;
     
     end
     

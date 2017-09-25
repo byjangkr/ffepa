@@ -5,7 +5,7 @@ addpath('func');
 %filename = 'train_10k_long.ffeat';
 %filename = 'dev_long.lmscore';
 %filename = 'set1.ffeat';
-filename = 'sample_data/train_10k_long_all.fgmfeat9';
+filename = 'sample_data/train_10k_long_all.ffeat';
 [fid, message] = fopen(filename);
 if fid == -1,
     disp(message);
@@ -43,6 +43,10 @@ for i=1:size(outList,2)
 end
 
 
+m = mean(feats);
+s = std(feats);
+
+save('train_10k_long_cmvn.mat','m','s');
 
 
 hbin = 50;
