@@ -46,7 +46,7 @@ end
 m = mean(feats);
 s = std(feats);
 
-save('mdl/train_10k_long_cmvn.mat','m','s');
+save('train_10k_long_cmvn.mat','m','s');
 
 
 hbin = 50;
