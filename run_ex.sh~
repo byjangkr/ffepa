@@ -1,6 +1,9 @@
 #!/bin/bash
 
-infile=`pwd`/sample_data/sample_ctm_39phn.filt
-outfile=`pwd`/sample_data/sample.feat
+infile=sample_data/sample.filt
+transfile=sample_data/sample.trans
+amsfile=sample_data/sample.amscore
+lmsfile=sample_data/sample.lmscore
+outfile=sample_data/output_sample.feat
 
-matlab -nodisplay -r "ext_flu_feat $inflie $outfile ; quit"
+matlab -nodisplay -r "ext_flu_feat $infile $outfile ; quit"

@@ -5,5 +5,4 @@ enviroment : matlab 2013a
 ext_flu_feat.m - initial code
 adv_ext_flu_feat.m - add features
 adv_ext_flu_feat2.m - complementing 'adv_ext_flu_feat.m'
-
 adv_ext_flu_feat3.m - useable varargin and matlab 2017a 
