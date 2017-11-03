@@ -12,7 +12,7 @@ function output = adv_ext_flu_feat3(infile,varargin)
 %   - amsfile : acoustic model score file
 %   - outfile : output file ( *.feat )
 
-addpath('func');
+addpath('ffepa/func');
 
 
 % need function
@@ -42,12 +42,13 @@ if length(varargin) == 2
     advmod = 0;
     transfile = varargin{1};
     outfile = varargin{2};
-elseif length(varargin) == 4
+elseif length(varargin) == 5
     advmod = 1;
     transfile = varargin{1};
     lmsfile = varargin{2};
     amsfile = varargin{3};
-    outfile = varargin{4};
+    postfile = varargin{4};
+    outfile = varargin{5};
 else
     error('error!!! not correct number of input file');
 end
@@ -64,6 +65,7 @@ if advmod
     % Read score file
     para = read_score_file(lmsfile,para,'lm');
     para = read_score_file(amsfile,para,'am');
+    para = read_score_file(postfile,para,'post');
 end
 
 % Extract the additive information
@@ -224,6 +226,8 @@ end
                para(sid).lmscore = score;
            case 'am'
                para(sid).amscore = score;
+           case 'post'
+               para(sid).post = score;
        end
    
        str = fgets(fid);
@@ -313,8 +317,11 @@ end
         if advmod
             ams = inputD(k).amscore;
             lms = inputD(k).lmscore;
+            post = inputD(k).post;
         end
 
+	% phone info
+        % phone index - 0 : consonants, 1 : vowels, 2 : silence
         % 1. Speech rate
         featname = 'SR';
         feat = check_add_feat(featname,nnz(phnid==1),sum_dur,name);
@@ -339,7 +346,7 @@ end
       	feat = [feat check_add_feat(featname,nnz(phnid==1),(nnz(dur(phnid==2) > cutoff)+1),name)];
         featList = char(featList,featname);
 
-        % 5. Smoothed ufilled pause rate
+        % 5. Smoothed unfilled pause rate
         featname = 'SUPR';
         feat = [feat check_add_feat(featname,sum(sigm(sil_dur)),sum_dur,name)];
         featList = char(featList,featname);
@@ -350,13 +357,13 @@ end
         featList = char(featList,featname);
                    
         % 7. Smoothed number of long unfilled pause
-        featname = 'SLUP';
+        featname = 'SNLUP';
         feat = [feat check_add_feat(featname,sum(sigm(sil_dur,[0.5 1.5])),1,name)];
         featList = char(featList,featname);
     
         % add features 2017.05.16
         % 8. Smoothed number of unfilled pause
-        featname = 'snumUP';
+        featname = 'SNUP';
         feat = [feat check_add_feat(featname,sum(sigm(sil_dur)),1,name)];
         featList = char(featList,featname);
 
@@ -386,15 +393,48 @@ end
         featname = 'longpwd';
         feat = [feat check_add_feat(featname,sum(sigm(sil_dur,[0.5 1.5])),numwds,name)];
         featList = char(featList,featname);
+                
+        % add features for asr 2017.07.04
+        % 14. Filled/unfilled pause rate
+        featname = 'FUFPR';
+        feat = [feat check_add_feat(featname,nnz(wordid~=0),sum_dur,name)];
+        featList = char(featList,featname);
         
+        % 15. word rate
+        featname = 'WR';
+        feat = [feat check_add_feat(featname,nnz(wordid==0),sum_dur,name)];
+        featList = char(featList,featname);
+
+        % fix number of feature 2017.11.01
+        % Fluency / Pronunciation / Language category
         if advmod
-            % 14. AM score (normalized)
-            featname = 'amscore';
-            feat = [feat check_add_feat(featname,ams,( sum_dur/0.01),name)];
+            % Pronunciation
+            % 16. AM score (duration normalized)
+            featname = 'amscore_dur';
+            feat = [feat check_add_feat(featname,ams,( sum(dur(phnid~=2))/0.01),name)];
             %amscore = ams /( sum_dur/0.01);
             featList = char(featList,featname);
             
-            % 15. LM score (normalized)
+            % 17. AM score (phone normalized)
+            featname = 'amscore_phn';
+            feat = [feat check_add_feat(featname,ams,nnz(phnid~=2),name)];
+            %amscore = ams /( sum_dur/0.01);
+            featList = char(featList,featname);
+
+            % 18. GOP (duration normalized)
+            featname = 'gop_dur';
+            feat = [feat check_add_feat(featname,post,( sum(dur(phnid~=2))/0.01),name)];
+            %amscore = ams /( sum_dur/0.01);
+            featList = char(featList,featname);
+
+            % 19. GOP (phone normalized)
+            featname = 'gop_phn';
+            feat = [feat check_add_feat(featname,post,nnz(phnid~=2),name)];
+            %amscore = ams /( sum_dur/0.01);
+            featList = char(featList,featname);
+            
+            % Language
+            % 20. LM score (normalized)
             featname = 'lmscore';
             feat = [feat check_add_feat(featname,lms,numwds,name)];
             featList = char(featList,featname);
@@ -402,34 +442,11 @@ end
             %featList = char(featList,'lmscore');
             %feat = [feat lmscore];
         end
-        
-        % add features for asr 2017.07.04
-        % 16. Filled/unfilled pause rate
-        featname = 'FUFPR';
-        feat = [feat check_add_feat(featname,nnz(wordid~=0),sum_dur,name)];
-        featList = char(featList,featname);
-        
-        % 17. word rate
-        featname = 'WR';
-        feat = [feat check_add_feat(featname,nnz(wordid==0),sum_dur,name)];
-        featList = char(featList,featname);
-
-        % modified
-	    %gmdl = load('train_10k_long_ffeat.mat');
-        %cmvn = load('train_10k_long_cmvn.mat');
-        %mmat = repmat(cmvn.m,size(feat,1));
-        %smat = repmat(cmvn.s,size(feat,1));
-        %no_feat = (feat - mmat)./smat;
     
         inputD(k).featList = featList;
-        %featsel = [ 1 2 3 4 5 14 15 16 17 ];
-        %inputD(k).feat = no_feat(:,featsel);
         inputD(k).feat = feat(:,1:end);
 
-        %gmfeat = [pdf(gmdl.gmobj1,feat(1)) pdf(gmdl.gmobj2,feat(2)) pdf(gmdl.gmobj3,feat(3)) pdf(gmdl.gmobj4,feat(4)) pdf(gmdl.gmobj5,feat(5))];
-        %gmfeat = [gmfeat pdf(gmdl.gmobj14,feat(14)) pdf(gmdl.gmobj15,feat(15)) pdf(gmdl.gmobj16,feat(16)) pdf(gmdl.gmobj17,feat(17))];
-        %inputD(k).feat = gmfeat;
-    
+
     end
     
     featsize = size(inputD(1).feat,2);
