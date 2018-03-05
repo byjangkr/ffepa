@@ -25,12 +25,12 @@ phones = {'aa','ae','ah','aw','ay','eh','er','ey','ih','iy',...
               'g','hh','jh','k','l','m','n','ng','p','r',...
               's','sh','t','th', 'v','w','y','z','sil','oov','laughter','noise'};
 vowels = {'aa','ae','ah','aw','ay','eh','er','ey','ih','iy',...
-              'ow','oy','uh','uw','oov'};
+              'ow','oy','uh','uw'};
 consonants = {'b','ch','d','dh','dx','f','g','hh','jh','k',...
                  'l','m','n','ng','p','r','s','sh','t','th',...
                  'v','w','y','z'};
 % silence = char('sil');
-silence = {'sil','laughter','noise'};
+silence = {'sil','laughter','noise','oov'};
 % word level
 fpword = {'uh','um','huh','mm','mhm','[laughter]','[noise]','<unk>'}; % filled pause
 
@@ -318,6 +318,7 @@ end
             ams = inputD(k).amscore;
             lms = inputD(k).lmscore;
             post = inputD(k).post;
+            uni = length(unique(inputD(k).trans));
         end
 
 	% phone info
@@ -409,38 +410,44 @@ end
         % Fluency / Pronunciation / Language category
         if advmod
             % Pronunciation
-            % 16. AM score (duration normalized)
+            % 16. GOP (phone normalized)
+            featname = 'gop_phn';
+            feat = [feat check_add_feat(featname,post,nnz(phnid~=2),name)];
+            %amscore = ams /( sum_dur/0.01);
+            featList = char(featList,featname);
+
+            % 17. AM score (duration normalized)
             featname = 'amscore_dur';
             feat = [feat check_add_feat(featname,ams,(sum_dur/0.01),name)];
             %amscore = ams /( sum_dur/0.01);
             featList = char(featList,featname);
             
-            % 17. AM score (phone normalized)
-            featname = 'amscore_phn';
-            feat = [feat check_add_feat(featname,ams,length(phnid),name)];
-            %amscore = ams /( sum_dur/0.01);
-            featList = char(featList,featname);
+            %% 18. GOP (duration normalized)
+            %featname = 'gop_dur';
+            %feat = [feat check_add_feat(featname,post,( sum(dur(phnid~=2))/0.01),name)];
+            %%amscore = ams /( sum_dur/0.01);
+            %featList = char(featList,featname);
 
-            % 18. GOP (duration normalized)
-            featname = 'gop_dur';
-            feat = [feat check_add_feat(featname,post,( sum(dur(phnid~=2))/0.01),name)];
-            %amscore = ams /( sum_dur/0.01);
-            featList = char(featList,featname);
-
-            % 19. GOP (phone normalized)
-            featname = 'gop_phn';
-            feat = [feat check_add_feat(featname,post,nnz(phnid~=2),name)];
-            %amscore = ams /( sum_dur/0.01);
-            featList = char(featList,featname);
             
             % Language
-            % 20. LM score (normalized)
+            % 18. LM score (normalized)
             featname = 'lmscore';
             feat = [feat check_add_feat(featname,lms,numwds,name)];
             featList = char(featList,featname);
             %lmscore = lms / numwds;
             %featList = char(featList,'lmscore');
             %feat = [feat lmscore];
+
+            % 19. The number of uniq word
+            featname = 'uniqword';
+            feat = [feat check_add_feat(featname,uni,numwds,name)];
+            featList = char(featList,featname);
+
+            %% 20. AM score (phone normalized)
+            featname = 'amscore_phn';
+            feat = [feat check_add_feat(featname,ams,length(phnid),name)];
+            amscore = ams /( sum_dur/0.01);
+            featList = char(featList,featname);
         end
     
         inputD(k).featList = featList;
